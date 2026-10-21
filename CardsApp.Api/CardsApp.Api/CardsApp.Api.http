@@ -2,5 +2,36 @@
 
 GET {{CardsApp.Api_HostAddress}}/weatherforecast/
 Accept: application/json
+###
 
+POST {{CardsApp.Api_HostAddress}}/api/decks
+Content-Type: application/json
+
+{
+  "title": "Проверка"
+}
+###
+
+GET {{CardsApp.Api_HostAddress}}/api/decks/
+
+###
+GET {{CardsApp.Api_HostAddress}}/api/decks
+###
+POST {{CardsApp.Api_HostAddress}}/api/cards
+Content-Type: application/json
+{
+  "deckId": 2,
+  "term": "termtest3",
+  "definition": "qwerty321"
+}
+###
+PUT {{CardsApp.Api_HostAddress}}/api/cards/6
+Content-Type: application/json
+{
+  "deckId": 1,
+  "term": "termtest3",
+  "definition": "qwerty321"
+}
+###
+GET {{CardsApp.Api_HostAddress}}/api/decks/1/cards
 ###
