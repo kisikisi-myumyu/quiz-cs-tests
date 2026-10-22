@@ -10,6 +10,7 @@ namespace CardsApp.Api.Controllers
     [Route("api/[controller]")]
     public class CardsController : ControllerBase
     {
+        private const int DoneLearn = 4;
         private readonly AppDbContext _db;
         public CardsController(AppDbContext db)
         {
@@ -121,6 +122,49 @@ namespace CardsApp.Api.Controllers
             _db.Cards.Remove(card);
             await _db.SaveChangesAsync();
             return NoContent();
+        }
+
+        /// <summary>
+        /// Перемещение по алгоритму Лейтнера
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="answerDto"></param>
+        /// <returns></returns>
+        [HttpPost("{id}/answer")]
+        public async Task<IActionResult> AnswerCard(int id, [FromBody] AnswerDto answerDto)
+        {
+            var existingCard = await _db.Cards.FindAsync(id);
+            if (existingCard == null) return NotFound();
+
+            if (existingCard.LeitnerBox == DoneLearn) return BadRequest(new
+            { message = $"Ошибка ответа: Карточка с ID {id} уже выучена" });
+        
+            if (answerDto.IsCorrect)  
+                existingCard.LeitnerBox++;
+            else 
+                existingCard.LeitnerBox = 1;
+
+            await _db.SaveChangesAsync();
+            return NoContent();
+        }
+
+
+        [HttpGet("~/api/decks/{deckId}/review")]
+        public async Task<ActionResult<List<Card>>> GetReviewCards(int deckId)
+        {
+            var isDeckExist = await _db.Decks.AnyAsync(c => c.Id == deckId);
+            if (!isDeckExist)
+            {
+                return BadRequest(new
+                {
+                    message = $"Ощибка Обновления: связанного набора с ID {deckId} не существует"
+                });
+            }
+
+            var cards = await _db.Cards
+                .Where(b => b.DeckId == deckId && b.LeitnerBox !=DoneLearn)
+                .ToListAsync();
+            return Ok(cards);
         }
     }
 }

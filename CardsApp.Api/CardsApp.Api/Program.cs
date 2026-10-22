@@ -13,7 +13,12 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source = AppDb.db"));
 
+builder.Services.AddCors(o=> o.AddPolicy("Demo",p=>
+    p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+
 var app = builder.Build();
+
+app.UseCors("Demo");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -21,7 +26,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseAuthorization();
 

@@ -6,7 +6,7 @@
         public int DeckId { get; set; }
         public required string Term { get; set; }
         public required string Definition { get; set; }
-        public int LeitnerBox { get; set; } = 0; // Карточка попадает в "Новая"
+        public int LeitnerBox { get; set; } = 1; // Карточка попадает в "коробка 1"
         public Deck Deck { get; set; } = null!;
     }
 }
