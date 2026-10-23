@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>Мои карточки</title>
+</head>
+<body>
+    <h1>Мои карточки</h1>
+    <p>Это первая страница.</p>
+    <ul id="decks">
+    </ul>
+    <input id="name_deck" placeholder="Название набора">
+    <button id="addCard">Создать набор</button>
+
+    <script>
+    const button = document.getElementById("addCard");
+    const API = "https://localhost:7155/";
+    const list = document.getElementById("decks")
+    const input_name = document.getElementById("name_deck")
+
+    async function loadDecks() {
+        const response = await fetch(API+ "api/decks");
+        const decks = await response.json();
+        list.innerHTML = "";
+        for(const deck of decks) {
+            const li = document.createElement("li");
+            li.textContent = deck.title;
+            list.appendChild(li);
+        }
+    }
+    loadDecks();
+
+    button.addEventListener("click" , async function(){
+        if(!input_name.value.trim()) {
+            alert("Введите название набора");
+            return;
+        }
+        
+        const response = await fetch(API + "api/decks", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({title: input_name.value})
+        });
+        if(!response){
+            alert("Не удалось создать набор");
+        }
+        loadDecks();
+        input_name.value = "";
+    });
+    </script>
+
+</body>
+</html>
