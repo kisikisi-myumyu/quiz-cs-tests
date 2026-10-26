@@ -11,24 +11,98 @@
     </ul>
     <input id="name_deck" placeholder="Название набора">
     <button id="addCard">Создать набор</button>
-
+    <div id = "card"></div>
     <script>
     const button = document.getElementById("addCard");
     const API = "https://localhost:7155/";
-    const list = document.getElementById("decks")
-    const input_name = document.getElementById("name_deck")
+    const list_decks = document.getElementById("decks");
+    // const list_cards = document.getElementById("cards");
+    const input_name = document.getElementById("name_deck");
+    let cards = [];
+    let current = 0;
+    
 
     async function loadDecks() {
         const response = await fetch(API+ "api/decks");
         const decks = await response.json();
-        list.innerHTML = "";
+        console.log(decks);
+        list_decks.innerHTML = "";
         for(const deck of decks) {
             const li = document.createElement("li");
             li.textContent = deck.title;
-            list.appendChild(li);
+            list_decks.appendChild(li);
+            li.addEventListener("click", function(){
+                startReview(deck.id)
+            });
         }
     }
     loadDecks();
+
+    async function startReview(deckId) {
+        const url = `${API}api/decks/${deckId}/review`
+        const response = await fetch(url);
+        cards = await response.json();
+        console.log(cards);
+        current = 0;
+        showCard();
+
+        
+    }
+    function showCard(){
+        const box = document.getElementById("card")
+        box.innerHTML = "";
+        if(current>= cards.length){
+            box.textContent = "Повторение закончено";
+            return;
+        }
+        const p = document.createElement("p");
+        p.textContent = cards[current].term;
+
+        const  btn = document.createElement("button");
+        btn.textContent = "Показать описание";
+        btn.addEventListener("click", function(){
+            p.textContent = cards[current].definition;
+            btn.remove();
+        });
+
+        box.appendChild(p);
+        box.appendChild(btn);
+
+        const answerContainer = document.createElement("div");
+
+        const falsebtn = document.createElement("button");
+        falsebtn.textContent = "Не знаю";
+        falsebtn.addEventListener("click", async function(){
+            const url = `${API}api/cards/${cards[current].id}/answer`;
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({isCorrect: false})
+            });
+            current++;
+            showCard();
+        });
+
+        const truebtn = document.createElement("button");
+        truebtn.textContent = "Знаю";
+        truebtn.addEventListener("click", async function(){
+            const url = `${API}api/cards/${cards[current].id}/answer`;
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({isCorrect: true})
+            });
+            current++;
+            showCard();
+        });
+
+        answerContainer.appendChild(falsebtn);
+        answerContainer.appendChild(truebtn);
+
+        box.appendChild(answerContainer);
+    }
+       
+    
 
     button.addEventListener("click" , async function(){
         if(!input_name.value.trim()) {
@@ -41,7 +115,7 @@
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({title: input_name.value})
         });
-        if(!response){
+        if(!response.ok()){
             alert("Не удалось создать набор");
         }
         loadDecks();
