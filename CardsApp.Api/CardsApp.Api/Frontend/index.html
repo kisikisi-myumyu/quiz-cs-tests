@@ -42,12 +42,14 @@
         const url = `${API}api/decks/${deckId}/review`
         const response = await fetch(url);
         cards = await response.json();
-        console.log(cards);
+        // console.log(cards); // отладка
         current = 0;
         showCard();
 
         
     }
+
+    // Начать повторение
     function showCard(){
         const box = document.getElementById("card")
         box.innerHTML = "";
@@ -63,6 +65,8 @@
         btn.addEventListener("click", function(){
             p.textContent = cards[current].definition;
             btn.remove();
+            box.appendChild(answerContainer);
+            
         });
 
         box.appendChild(p);
@@ -70,40 +74,49 @@
 
         const answerContainer = document.createElement("div");
 
-        const falsebtn = document.createElement("button");
-        falsebtn.textContent = "Не знаю";
-        falsebtn.addEventListener("click", async function(){
-            const url = `${API}api/cards/${cards[current].id}/answer`;
-            const response = await fetch(url, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({isCorrect: false})
-            });
-            current++;
-            showCard();
-        });
+        //Кнопки Ответа
+        function createAnswerButton(text, isCorrectValue) {
+            const btn = document.createElement("button");
+            btn.textContent = text;
+            
+            btn.addEventListener("click", async function() {
+                const allButton = answerContainer.querySelectorAll("button");
+                allButton.forEach(b=> b.disabled=true);
 
-        const truebtn = document.createElement("button");
-        truebtn.textContent = "Знаю";
-        truebtn.addEventListener("click", async function(){
-            const url = `${API}api/cards/${cards[current].id}/answer`;
-            const response = await fetch(url, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({isCorrect: true})
+                const url = `${API}api/cards/${cards[current].id}/answer`;
+                try{
+                    const respose = await fetch(url, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({isCorrect: isCorrectValue})
+                });
+
+                if(!respose.ok){
+                    alert("Не удалось сохранить ответ")
+                }
+                
+                current++;
+                showCard();
+                } catch(error){
+                    console.error("Ошибка при отправке ответа: ", error);
+                    allButton.forEach(b=> b.disabled = false);
+                }
             });
-            current++;
-            showCard();
-        });
+    
+            return btn;
+        }
+    
+        const falsebtn = createAnswerButton("Не знаю", false);
+        const truebtn = createAnswerButton("Знаю", true);
 
         answerContainer.appendChild(falsebtn);
         answerContainer.appendChild(truebtn);
 
-        box.appendChild(answerContainer);
+        // box.appendChild(answerContainer);
     }
        
     
-
+    // Создание набора
     button.addEventListener("click" , async function(){
         if(!input_name.value.trim()) {
             alert("Введите название набора");
@@ -115,11 +128,19 @@
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({title: input_name.value})
         });
-        if(!response.ok()){
+        if(!response.ok){
             alert("Не удалось создать набор");
+            return;
         }
         loadDecks();
         input_name.value = "";
+    });
+
+    // Удаление набора
+    button.addEventListener("click", async function() {
+       const response = await fetch(API + "api/decks/" + deck.id,{
+        method:"Delete"
+       }) 
     });
     </script>
 
