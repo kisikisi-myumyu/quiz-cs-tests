@@ -1,0 +1,158 @@
+/* 1. Глобальные стили страницы */
+body {
+    background-color: var(--md-sys-color-background);
+    color: var(--md-sys-color-on-background);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+h1 {
+    color: var(--md-sys-color-primary);
+    font-size: 28px;
+    font-weight: 600;
+}
+
+p {
+    color: var(--md-sys-color-on-background-variant);
+}
+
+/* 2. Поле ввода (Название набора) */
+#name_deck {
+    background-color: var(--md-sys-color-surface-container);
+    color: var(--md-sys-color-on-surface);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 16px;
+    outline: none;
+    width: calc(100% - 160px);
+    margin-right: 12px;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+#name_deck:focus {
+    border-color: var(--md-sys-color-primary);
+    box-shadow: 0 0 0 1px var(--md-sys-color-primary);
+}
+
+/* 3. Базовые стили для всех кнопок */
+button {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 100px; /* Скругление по гайдлайнам Material 3 */
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s, background-color 0.2s;
+}
+
+button:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Кнопка "Создать набор" */
+#addCard {
+    background-color: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+}
+
+/* 4. Списки наборов (Decks) */
+ul#decks {
+    list-style: none;
+    padding: 0;
+    margin: 24px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+ul#decks li {
+    background-color: var(--md-sys-color-surface-container-low);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    padding: 14px 20px;
+    border-radius: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+ul#decks li span {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+}
+
+/* Кнопка "Удалить набор" */
+ul#decks li button {
+    background-color: var(--md-sys-color-surface-variant);
+    color: var(--md-sys-color-on-surface-variant);
+    padding: 6px 16px;
+    font-size: 13px;
+}
+
+ul#decks li button:hover:not(:disabled) {
+    background-color: var(--md-sys-color-error-container);
+    color: var(--md-sys-color-on-error-container);
+}
+
+/* 5. Область активной интерактивной карточки (Flashcard) */
+#card {
+    margin-top: 32px;
+}
+
+#card:not(:empty) {
+    background-color: var(--md-sys-color-surface-container-high);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    padding: 24px;
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+#card p {
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+/* Кнопка "Показать описание" внутри карточки */
+#card > button {
+    background-color: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    width: 100%;
+}
+
+/* Контейнер кнопок "Знаю" / "Не знаю" */
+#card div {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    width: 100%;
+}
+
+#card div button {
+    flex: 1;
+    padding: 12px;
+}
+
+/* Кнопка "Не знаю" */
+#card div button:first-child {
+    background-color: var(--md-sys-color-error);
+    color: var(--md-sys-color-on-error);
+}
+
+/* Кнопка "Знаю" */
+#card div button:last-child {
+    background-color: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+}

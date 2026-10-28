@@ -1,191 +1,21 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="light">
 <head>
     <meta charset="utf-8">
     <title>Мои карточки</title>
+    <link rel="stylesheet" href="css/light.css">
+    <link rel="stylesheet" media="(prefers-color-scheme: dark)" href="css/dark.css">
+    <link rel="stylesheet" href="css/style.css">
+
 </head>
 <body>
     <h1>Мои карточки</h1>
     <p>Это первая страница.</p>
-    <ul id="decks">
-    </ul>
+    <ul id="decks"></ul>
     <input id="name_deck" placeholder="Название набора">
     <button id="addCard">Создать набор</button>
-    <div id = "card"></div>
-    <script>
-    const button = document.getElementById("addCard");
-    const API = "https://f6bk99v8-7155.jpe1.devtunnels.ms/";
-    const list_decks = document.getElementById("decks");
-    // const list_cards = document.getElementById("cards");
-    const input_name = document.getElementById("name_deck");
-    let cards = [];
-    let current = 0;
-    
+    <div id="card"></div>
 
-    async function loadDecks() {
-        const response = await fetch(API+ "api/decks");
-        const decks = await response.json();
-        console.log(decks);
-        list_decks.innerHTML = "";
-        for(const deck of decks) {
-            console.log(deck);
-            const li = document.createElement("li");
-            // li.textContent = deck.title;
-            // list_decks.appendChild(li);
-            
-            const textSpan = document.createElement("span");
-            textSpan.textContent = deck.title;           
-            textSpan.style.cursor = "grab";
-            li.appendChild(textSpan);
-            textSpan.addEventListener("click", function(){
-                startReview(deck.id);
-            });
-
-            // Кнопка удалить набор
-            const buttonDel = document.createElement("button");
-            buttonDel.textContent = "Удалить набор";
-            li.appendChild(buttonDel);
-            buttonDel.addEventListener("click", async function(){
-                buttonDel.disabled = true;
-                try{
-                    const notice = confirm("Вы точно хотите удалить набор? Это действие нельзя отменить")
-                    if(!notice){
-                        alert("Удаление набора отменено");
-                        return;
-                    }
-                    const url = `${API}api/decks/${deck.id}`;
-                    const response = await fetch(url, {method:"DELETE"});
-                    if(!response.ok){
-                        alert("Не удалось удалить набор")
-                        buttonDel.disabled = false;
-                        return;
-                    }
-                    alert("Набор успешно удален");
-                    loadDecks();
-                } catch(error){
-                    console.error("Ошибка при удалении: ",error)
-                    buttonDel.disabled=false;
-                }
-                
-                
-            });
-            list_decks.appendChild(li)
-           
-           
-           
-            // li.addEventListener("click", function(){
-            //     startReview(deck.id)
-            // });
-        }
-    }
-    loadDecks();
-
-    async function startReview(deckId) {
-        const url = `${API}api/decks/${deckId}/review`
-        const response = await fetch(url);
-        cards = await response.json();
-        // console.log(cards); // отладка
-        current = 0;
-        showCard();
-
-        
-    }
-
-    // Начать повторение
-    function showCard(){
-        const box = document.getElementById("card")
-        box.innerHTML = "";
-        if(current>= cards.length){
-            box.textContent = "Повторение закончено";
-            return;
-        }
-        const p = document.createElement("p");
-        p.textContent = cards[current].term;
-
-        const  btn = document.createElement("button");
-        btn.textContent = "Показать описание";
-        btn.addEventListener("click", function(){
-            p.textContent = cards[current].definition;
-            btn.remove();
-            box.appendChild(answerContainer);
-            
-        });
-
-        box.appendChild(p);
-        box.appendChild(btn);
-
-        const answerContainer = document.createElement("div");
-
-        //Кнопки Ответа
-        function createAnswerButton(text, isCorrectValue) {
-            const btn = document.createElement("button");
-            btn.textContent = text;
-            
-            btn.addEventListener("click", async function() {
-                const allButton = answerContainer.querySelectorAll("button");
-                allButton.forEach(b=> b.disabled=true);
-
-                const url = `${API}api/cards/${cards[current].id}/answer`;
-                try{
-                    const response = await fetch(url, {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({isCorrect: isCorrectValue})
-                    });
-
-                    if(!response.ok){
-                        alert("Не удалось получить ответ на карточку");
-                        allButton.forEach(b=>b.disabled=false);
-                        return;
-                    }
-
-                    current++;
-                    showCard();
-                } catch(error){
-                    console.error("Ошибка при отправке ответа: ", error);
-                    allButton.forEach(b=> b.disabled = false);
-                }
-            });
-    
-            return btn;
-        }
-    
-        const falsebtn = createAnswerButton("Не знаю", false);
-        const truebtn = createAnswerButton("Знаю", true);
-
-        answerContainer.appendChild(falsebtn);
-        answerContainer.appendChild(truebtn);
-
-        // box.appendChild(answerContainer);
-    }
-       
-    
-    // Создание набора
-    button.addEventListener("click" , async function(){
-        if(!input_name.value.trim()) {
-            alert("Введите название набора");
-            return;
-        }
-        
-        const response = await fetch(API + "api/decks", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({title: input_name.value})
-        });
-        if(!response.ok){
-            alert("Не удалось создать набор");
-        }
-        loadDecks();
-        input_name.value = "";
-    });
-
-    // Удаление набора
-    // button.addEventListener("click", async function() {
-    //    const response = await fetch(API + "api/decks/" + deck.id,{
-    //     method:"Delete"
-    //    }) 
-    // });
-    </script>
-
+    <script type="module" src="app.js"></script>
 </body>
 </html>
