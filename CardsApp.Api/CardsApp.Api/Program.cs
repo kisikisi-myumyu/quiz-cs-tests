@@ -20,6 +20,8 @@ var app = builder.Build();
 
 app.UseCors("Demo");
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

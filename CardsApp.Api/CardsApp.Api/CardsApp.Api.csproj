@@ -20,7 +20,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Frontend\" />
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\api.js" />
+    <None Include="wwwroot\app.js" />
+    <None Include="wwwroot\css\dark-hc.css" />
+    <None Include="wwwroot\css\dark-mc.css" />
+    <None Include="wwwroot\css\dark.css" />
+    <None Include="wwwroot\css\light-hc.css" />
+    <None Include="wwwroot\css\light-mc.css" />
+    <None Include="wwwroot\css\light.css" />
+    <None Include="wwwroot\css\style.css" />
+    <None Include="wwwroot\index.html" />
   </ItemGroup>
 
 </Project>

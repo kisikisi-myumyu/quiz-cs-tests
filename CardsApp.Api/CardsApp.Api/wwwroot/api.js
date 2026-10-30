@@ -37,3 +37,15 @@ export async function sendCardAnswer(cardId, isCorrectValue) {
         body: JSON.stringify({isCorrect: isCorrectValue})
     });
 }
+
+export async function createCard(deckId,termValue, definitionValue) {
+    return await fetch(`${API}api/cards`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            deckId: deckId,
+            term: termValue,
+            definition: definitionValue
+        })
+    });
+}
