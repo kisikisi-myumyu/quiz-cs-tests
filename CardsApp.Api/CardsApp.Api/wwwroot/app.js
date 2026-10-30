@@ -4,7 +4,9 @@ import {
     deleteDeck, 
     fetchReviewCards, 
     sendCardAnswer, 
-    createCard
+    createCard,
+    getAllCards,
+    deleteCard
 } from './api.js';
 
 const button = document.getElementById("addCard");
@@ -57,6 +59,22 @@ async function loadDecks() {
                 }
             });
 
+            // Просмотр карточек и взаимодействия
+            const btnShowCard = document.createElement("button");
+            btnShowCard.textContent = "Карточки";
+            li.appendChild(btnShowCard);
+            btnShowCard.addEventListener("click", async function() {
+                btnShowCard.disabled = true;
+                try{
+                    const cards = await getAllCards(deck.id);
+                    car
+                    for(const card of cards){
+                        console.log(card);
+                    }
+                }catch{}
+            })
+
+            // Создание карточки
             const btnCreateCard = document.createElement("button");
             btnCreateCard.textContent = "Добавить карточку в набор"
             li.appendChild(btnCreateCard);
@@ -64,7 +82,7 @@ async function loadDecks() {
                 btnCreateCard.disabled = true;
                 try{
                     const term = prompt("Введите термин");
-                    if(term == null)  return;
+                    if(term == null) return;
                     if(!term.trim()){
                         alert("Термин не может быть пустым")
                         return;
@@ -79,16 +97,15 @@ async function loadDecks() {
                     const response = await createCard(deck.id, term, definition);
                     if(!response.ok){
                         alert("Не удалось создать карточку")
-                        btnCreateCard.disabled = false;
                         return;
                     }
                     alert("Карточка добавлена в набор");
-                    btnCreateCard.disabled = false;
                 } catch(error){
-                    console.error("Ошибка создания набора", error);
-                    btnCreateCard.disabled = false;
+                    console.error("Ошибка создания карточки", error);
+                } finally{
+                    btnCreateCard.disabled = false
                 }
-            })
+            });
 
             list_decks.appendChild(li)
         }
@@ -188,3 +205,39 @@ button.addEventListener("click", async function(){
     }
 });
 
+// Просмотр карточек
+function renderCard(card){
+    const box = document.getElementById("cards-container")
+    box.innerHTML = "";
+    
+    const term = document.createElement("p");
+    term.textContent = cards[current].term;
+    const definition = document.createElement("p");
+    definition.textContent = cards[current].definition;
+    
+    box.appendChild(term);
+    box.appendChild(definition);
+
+    const buttonContainer = document.createElement("div");
+
+    // Кнопка удаления карточки
+    const btnDeleteCard = document.createElement("button");
+    btnDeleteCard.textContent = "Удалить карточку";
+    btnDeleteCard.addEventListener("click", async function() {
+        btnDeleteCard.disabled = true;
+        try{
+            const response = await deleteCard(card.id);
+            if(!response.ok){
+                alert("Не удалось удалить карточку");
+                return;
+            }
+
+            alert("Карточка успешно удалена")
+        } catch(error){
+            console.error("Ошибка при удалении карточки : ", error);
+        }finally{
+            btnDeleteCard.disabled = false;
+        }
+        
+    });
+}

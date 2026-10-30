@@ -49,3 +49,17 @@ export async function createCard(deckId,termValue, definitionValue) {
         })
     });
 }
+
+export async function getAllCards(deckId) {
+    const response = await fetch(`${API}api/decks/${deckId}/cards`);
+    if(!response.ok){
+        throw new Error(`Ошибка при получении карточек: статус ${response.status}`);
+    }
+    return await response.json
+}
+
+export async function deleteCard(cardId) {
+    return await fetch(`${API}/api/cards/${cardId}`,{
+        method: "DELETE"
+    });
+}
