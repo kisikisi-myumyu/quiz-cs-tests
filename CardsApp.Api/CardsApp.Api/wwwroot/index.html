@@ -6,16 +6,51 @@
     <link rel="stylesheet" href="css/light.css">
     <link rel="stylesheet" media="(prefers-color-scheme: dark)" href="css/dark.css">
     <link rel="stylesheet" href="css/style.css">
-
 </head>
 <body>
-    <h1>Мои карточки</h1>
-    <p>Это первая страница.</p>
-    <ul id="decks"></ul>
-    <input id="name_deck" placeholder="Название набора">
-    <button id="addCard">Создать набор</button>
-    <div id="card"></div>
-    <div id = "cards-container"></div>
+    <header>
+        <h1>Мои карточки</h1>
+        <p>Интервальные повторения по системе Лейтнера</p>
+    </header>
+
+    <main>
+        <!-- Секция наборов -->
+        <section class="panel">
+            <h2>Наборы</h2>
+            <form id="createDeckForm" class="form-row">
+                <input id="name_deck" class="input-field" placeholder="Название набора" required>
+                <button type="submit" id="addDeckBtn" class="btn btn-primary">Создать набор</button>
+            </form>
+            <ul id="decks" class="deck-list"></ul>
+        </section>
+
+        <!-- Секция карточек выбранного набора (по умолчанию скрыта) -->
+        <section id="deckDetails" class="panel hidden">
+            <div class="panel-header">
+                <h2 id="currentDeckTitle">Карточки</h2>
+                <button type="button" id="closeDeckDetailsBtn" class="btn btn-secondary">Закрыть</button>
+            </div>
+
+            <!-- Форма добавления карточки -->
+            <form id="createCardForm" class="form-column">
+                <input id="card_term" class="input-field" placeholder="Термин (вопрос)" required>
+                <input id="card_def" class="input-field" placeholder="Определение (ответ)" required>
+                <button type="submit" class="btn btn-primary">Добавить карточку</button>
+            </form>
+
+            <ul id="cardsContainer" class="card-list"></ul>
+        </section>
+
+        <!-- Секция интерактивного повторения (по умолчанию скрыта) -->
+        <section id="reviewSection" class="panel hidden">
+            <div class="panel-header">
+                <h2>Повторение</h2>
+                <button type="button" id="closeReviewBtn" class="btn btn-secondary">Закончить</button>
+            </div>
+            <div id="cardBox" class="flashcard-container"></div>
+        </section>
+    </main>
+
     <script type="module" src="app.js"></script>
 </body>
 </html>

@@ -2,242 +2,284 @@ import {
     fetchDecks, 
     createDeck, 
     deleteDeck, 
+    getAllCards, 
+    createCard, 
+    deleteCard, 
     fetchReviewCards, 
-    sendCardAnswer, 
-    createCard,
-    getAllCards,
-    deleteCard
+    sendCardAnswer 
 } from './api.js';
 
-const button = document.getElementById("addCard");
-const list_decks = document.getElementById("decks");
-const input_name = document.getElementById("name_deck");
-let cards = [];
-let current = 0;
+// DOM: Элементы наборов
+const createDeckForm = document.getElementById("createDeckForm");
+const inputDeckName = document.getElementById("name_deck");
+const decksList = document.getElementById("decks");
+
+// DOM: Элементы карточек набора
+const deckDetailsPanel = document.getElementById("deckDetails");
+const currentDeckTitle = document.getElementById("currentDeckTitle");
+const closeDeckDetailsBtn = document.getElementById("closeDeckDetailsBtn");
+const createCardForm = document.getElementById("createCardForm");
+const inputCardTerm = document.getElementById("card_term");
+const inputCardDef = document.getElementById("card_def");
+const cardsContainer = document.getElementById("cardsContainer");
+
+// DOM: Элементы повторения
+const reviewSection = document.getElementById("reviewSection");
+const closeReviewBtn = document.getElementById("closeReviewBtn");
+const cardBox = document.getElementById("cardBox");
+
+// Состояние (State)
+let activeDeckId = null;
+let reviewDeck = [];
+let currentReviewIndex = 0;
+
+// --- 1. Логика наборов ---
 
 async function loadDecks() {
     try {
         const decks = await fetchDecks();
-        console.log(decks);
-        list_decks.innerHTML = "";
-        for(const deck of decks) {
-            console.log(deck);
+        decksList.innerHTML = "";
+
+        decks.forEach(deck => {
             const li = document.createElement("li");
-            
-            const textSpan = document.createElement("span");
-            textSpan.textContent = deck.title;           
-            textSpan.style.cursor = "pointer";
-            li.appendChild(textSpan);
-            textSpan.addEventListener("click", function(){
-                startReview(deck.id);
-            });
+            li.className = "deck-item";
 
-            // Кнопка удалить набор
-            const buttonDel = document.createElement("button");
-            buttonDel.textContent = "Удалить набор";
-            li.appendChild(buttonDel);
-            buttonDel.addEventListener("click", async function(){
-                buttonDel.disabled = true;
-                try{
-                    const notice = confirm("Вы точно хотите удалить набор? Это действие нельзя отменить")
-                    if(!notice){
-                        alert("Удаление набора отменено");
-                        buttonDel.disabled = false;
-                        return;
-                    }
-                    const response = await deleteDeck(deck.id);
-                    if(!response.ok){
-                        alert("Не удалось удалить набор")
-                        buttonDel.disabled = false;
-                        return;
-                    }
-                    alert("Набор успешно удален");
-                    loadDecks();
-                } catch(error){
-                    console.error("Ошибка при удалении: ", error)
-                    buttonDel.disabled = false;
-                }
-            });
+            const spanTitle = document.createElement("span");
+            spanTitle.className = "deck-title";
+            spanTitle.textContent = deck.title;
+            spanTitle.addEventListener("click", () => openDeckCards(deck));
 
-            // Просмотр карточек и взаимодействия
-            const btnShowCard = document.createElement("button");
-            btnShowCard.textContent = "Карточки";
-            li.appendChild(btnShowCard);
-            btnShowCard.addEventListener("click", async function() {
-                btnShowCard.disabled = true;
-                try{
-                    const cards = await getAllCards(deck.id);
-                    car
-                    for(const card of cards){
-                        console.log(card);
-                    }
-                }catch{}
-            })
+            const actionsDiv = document.createElement("div");
+            actionsDiv.className = "deck-actions";
 
-            // Создание карточки
-            const btnCreateCard = document.createElement("button");
-            btnCreateCard.textContent = "Добавить карточку в набор"
-            li.appendChild(btnCreateCard);
-            btnCreateCard.addEventListener("click", async function(){
-                btnCreateCard.disabled = true;
-                try{
-                    const term = prompt("Введите термин");
-                    if(term == null) return;
-                    if(!term.trim()){
-                        alert("Термин не может быть пустым")
-                        return;
-                    }
-                    const definition = prompt("Введите определение");
-                    if(definition == null) return;
-                    if(!definition.trim()){
-                        alert("Определение не может быть пустым")
-                        return;
-                    }
+            const btnStudy = document.createElement("button");
+            btnStudy.className = "btn btn-secondary";
+            btnStudy.textContent = "Учить";
+            btnStudy.addEventListener("click", () => startReviewSession(deck.id));
 
-                    const response = await createCard(deck.id, term, definition);
-                    if(!response.ok){
-                        alert("Не удалось создать карточку")
-                        return;
-                    }
-                    alert("Карточка добавлена в набор");
-                } catch(error){
-                    console.error("Ошибка создания карточки", error);
-                } finally{
-                    btnCreateCard.disabled = false
-                }
-            });
+            const btnDelete = document.createElement("button");
+            btnDelete.className = "btn btn-tonal";
+            btnDelete.textContent = "Удалить";
+            btnDelete.addEventListener("click", () => handleDeleteDeck(deck.id, deck.title));
 
-            list_decks.appendChild(li)
-        }
-    } catch (error) {
-        console.error("Ошибка при загрузке наборов: ", error);
-    }
-}
-loadDecks();
+            actionsDiv.appendChild(btnStudy);
+            actionsDiv.appendChild(btnDelete);
 
-async function startReview(deckId) {
-    try {
-        cards = await fetchReviewCards(deckId);
-        current = 0;
-        showCard();
-    } catch (error) {
-        console.error("Ошибка при старте повторения: ", error);
-    }
-}
-
-// Начать повторение
-function showCard(){
-    const box = document.getElementById("card")
-    box.innerHTML = "";
-    if(current >= cards.length){
-        box.textContent = "Повторение закончено";
-        return;
-    }
-    const p = document.createElement("p");
-    p.textContent = cards[current].term;
-
-    const btn = document.createElement("button");
-    btn.textContent = "Показать описание";
-    btn.addEventListener("click", function(){
-        p.textContent = cards[current].definition;
-        btn.remove();
-        box.appendChild(answerContainer);
-    });
-
-    box.appendChild(p);
-    box.appendChild(btn);
-
-    const answerContainer = document.createElement("div");
-
-    //Кнопки Ответа
-    function createAnswerButton(text, isCorrectValue) {
-        const btn = document.createElement("button");
-        btn.textContent = text;
-        
-        btn.addEventListener("click", async function() {
-            const allButton = answerContainer.querySelectorAll("button");
-            allButton.forEach(b => b.disabled = true);
-
-            try{
-                const response = await sendCardAnswer(cards[current].id, isCorrectValue);
-
-                if(!response.ok){
-                    alert("Не удалось получить ответ на карточку");
-                    allButton.forEach(b => b.disabled = false);
-                    return;
-                }
-
-                current++;
-                showCard();
-            } catch(error){
-                console.error("Ошибка при отправке ответа: ", error);
-                allButton.forEach(b => b.disabled = false);
-            }
+            li.appendChild(spanTitle);
+            li.appendChild(actionsDiv);
+            decksList.appendChild(li);
         });
-    
-        return btn;
+    } catch (err) {
+        console.error(err);
     }
-    
-    const falsebtn = createAnswerButton("Не знаю", false);
-    const truebtn = createAnswerButton("Знаю", true);
-
-    answerContainer.appendChild(falsebtn);
-    answerContainer.appendChild(truebtn);
 }
-   
-// Создание набора
-button.addEventListener("click", async function(){
-    if(!input_name.value.trim()) {
-        alert("Введите название набора");
-        return;
-    }
-    
+
+createDeckForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const title = inputDeckName.value.trim();
+    if (!title) return;
+
     try {
-        const response = await createDeck(input_name.value);
-        if(!response.ok){
+        const response = await createDeck(title);
+        if (response.ok) {
+            inputDeckName.value = "";
+            loadDecks();
+        } else {
             alert("Не удалось создать набор");
-            return;
         }
-        loadDecks();
-        input_name.value = "";
-    } catch (error) {
-        console.error("Ошибка при создании набора: ", error);
+    } catch (err) {
+        console.error(err);
     }
 });
 
-// Просмотр карточек
-function renderCard(card){
-    const box = document.getElementById("cards-container")
-    box.innerHTML = "";
-    
-    const term = document.createElement("p");
-    term.textContent = cards[current].term;
-    const definition = document.createElement("p");
-    definition.textContent = cards[current].definition;
-    
-    box.appendChild(term);
-    box.appendChild(definition);
-
-    const buttonContainer = document.createElement("div");
-
-    // Кнопка удаления карточки
-    const btnDeleteCard = document.createElement("button");
-    btnDeleteCard.textContent = "Удалить карточку";
-    btnDeleteCard.addEventListener("click", async function() {
-        btnDeleteCard.disabled = true;
-        try{
-            const response = await deleteCard(card.id);
-            if(!response.ok){
-                alert("Не удалось удалить карточку");
-                return;
+async function handleDeleteDeck(id, title) {
+    if (!confirm(`Удалить набор "${title}"?`)) return;
+    try {
+        const response = await deleteDeck(id);
+        if (response.ok) {
+            if (activeDeckId === id) {
+                deckDetailsPanel.classList.add("hidden");
             }
-
-            alert("Карточка успешно удалена")
-        } catch(error){
-            console.error("Ошибка при удалении карточки : ", error);
-        }finally{
-            btnDeleteCard.disabled = false;
+            loadDecks();
         }
-        
-    });
+    } catch (err) {
+        console.error(err);
+    }
 }
+
+// --- 2. Логика карточек выбранного набора ---
+
+async function openDeckCards(deck) {
+    activeDeckId = deck.id;
+    currentDeckTitle.textContent = `Карточки: ${deck.title}`;
+    
+    reviewSection.classList.add("hidden");
+    deckDetailsPanel.classList.remove("hidden");
+    
+    await loadCardsList(activeDeckId);
+}
+
+closeDeckDetailsBtn.addEventListener("click", () => {
+    deckDetailsPanel.classList.add("hidden");
+    activeDeckId = null;
+});
+
+async function loadCardsList(deckId) {
+    cardsContainer.innerHTML = "";
+    try {
+        const cards = await getAllCards(deckId);
+        if (cards.length === 0) {
+            const emptyP = document.createElement("p");
+            emptyP.textContent = "В наборе пока нет карточек.";
+            cardsContainer.appendChild(emptyP);
+            return;
+        }
+
+        cards.forEach(card => {
+            const li = document.createElement("li");
+            li.className = "card-item";
+
+            const content = document.createElement("div");
+            content.className = "card-item-content";
+
+            const term = document.createElement("span");
+            term.className = "card-term";
+            term.textContent = card.term;
+
+            const def = document.createElement("span");
+            def.className = "card-def";
+            def.textContent = card.definition;
+
+            const badge = document.createElement("span");
+            badge.className = "card-box-badge";
+            badge.textContent = `Коробка Лейтнера: ${card.leitnerBox}`;
+
+            content.appendChild(term);
+            content.appendChild(def);
+            content.appendChild(badge);
+
+            const btnDel = document.createElement("button");
+            btnDel.className = "btn btn-tonal";
+            btnDel.textContent = "✕";
+            btnDel.addEventListener("click", async () => {
+                await deleteCard(card.id);
+                loadCardsList(deckId);
+            });
+
+            li.appendChild(content);
+            li.appendChild(btnDel);
+            cardsContainer.appendChild(li);
+        });
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+createCardForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!activeDeckId) return;
+
+    const term = inputCardTerm.value.trim();
+    const def = inputCardDef.value.trim();
+    if (!term || !def) return;
+
+    try {
+        const response = await createCard(activeDeckId, term, def);
+        if (response.ok) {
+            inputCardTerm.value = "";
+            inputCardDef.value = "";
+            loadCardsList(activeDeckId);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+});
+
+// --- 3. Логика повторения карточек ---
+
+async function startReviewSession(deckId) {
+    try {
+        reviewDeck = await fetchReviewCards(deckId);
+        currentReviewIndex = 0;
+
+        if (reviewDeck.length === 0) {
+            alert("Все карточки выучены либо набор пуст!");
+            return;
+        }
+
+        deckDetailsPanel.classList.add("hidden");
+        reviewSection.classList.remove("hidden");
+        renderCurrentReviewCard();
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+closeReviewBtn.addEventListener("click", () => {
+    reviewSection.classList.add("hidden");
+});
+
+function renderCurrentReviewCard() {
+    cardBox.innerHTML = "";
+
+    if (currentReviewIndex >= reviewDeck.length) {
+        const finishedText = document.createElement("p");
+        finishedText.className = "flashcard-term";
+        finishedText.textContent = "Повторение завершено!";
+        cardBox.appendChild(finishedText);
+        return;
+    }
+
+    const card = reviewDeck[currentReviewIndex];
+
+    const termElem = document.createElement("div");
+    termElem.className = "flashcard-term";
+    termElem.textContent = card.term;
+
+    const btnShowDef = document.createElement("button");
+    btnShowDef.className = "btn btn-secondary";
+    btnShowDef.textContent = "Показать определение";
+
+    btnShowDef.addEventListener("click", () => {
+        btnShowDef.remove();
+
+        const defElem = document.createElement("div");
+        defElem.className = "flashcard-def";
+        defElem.textContent = card.definition;
+
+        const actions = document.createElement("div");
+        actions.className = "flashcard-actions";
+
+        const btnWrong = document.createElement("button");
+        btnWrong.className = "btn btn-danger";
+        btnWrong.textContent = "Не знаю";
+        btnWrong.addEventListener("click", () => handleAnswer(card.id, false));
+
+        const btnRight = document.createElement("button");
+        btnRight.className = "btn btn-success";
+        btnRight.textContent = "Знаю";
+        btnRight.addEventListener("click", () => handleAnswer(card.id, true));
+
+        actions.appendChild(btnWrong);
+        actions.appendChild(btnRight);
+
+        cardBox.appendChild(defElem);
+        cardBox.appendChild(actions);
+    });
+
+    cardBox.appendChild(termElem);
+    cardBox.appendChild(btnShowDef);
+}
+
+async function handleAnswer(cardId, isCorrect) {
+    try {
+        await sendCardAnswer(cardId, isCorrect);
+        currentReviewIndex++;
+        renderCurrentReviewCard();
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// Точка входа
+loadDecks();
