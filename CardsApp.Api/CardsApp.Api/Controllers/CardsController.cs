@@ -142,7 +142,7 @@ namespace CardsApp.Api.Controllers
             var existingCard = await _db.Cards.FindAsync(id);
             if (existingCard == null) return NotFound();
 
-            if (existingCard.LeitnerBox == DoneLearn) return BadRequest(new
+            if (existingCard.LeitnerBox >= DoneLearn) return BadRequest(new
             { message = $"Ошибка ответа: Карточка с ID {id} уже выучена" });
 
             if (answerDto.IsCorrect)
@@ -212,9 +212,9 @@ namespace CardsApp.Api.Controllers
         }
 
         /// <summary>
-        /// Явно задает свойство <see cref="DateTimeKind.Utc"/> для даты следующего повторения карточки.
-        /// </summary>
-        /// <param name="card">Карточка, дату которой необходимо нормализовать.</param>
+/// Явно задает свойство <see cref="DateTimeKind.Utc"/> для даты следующего повторения карточки.
+/// </summary>
+/// <param name="card">Карточка, дату которой необходимо нормализовать.</param>
         private static void NormalizeUtc(Card card)
         {
             if (card.NextReviewAt.HasValue)
