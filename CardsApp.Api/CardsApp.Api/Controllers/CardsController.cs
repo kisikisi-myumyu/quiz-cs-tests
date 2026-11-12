@@ -20,31 +20,40 @@ namespace CardsApp.Api.Controllers
         /// <summary>
         /// Получение карточки по id
         /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCardId(int id)
         {
-            var card = await _db.Cards.FindAsync(id);
+            var card = await _db.Cards
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == id);
+
             if (card == null)
             {
                 return NotFound();
             }
 
+            NormalizeUtc(card);
             return Ok(card);
         }
+
+
 
         /// <summary>
         /// Получить карточки набора
         /// </summary>
-        /// <param name="deckId"></param>
-        /// <returns></returns>
         [HttpGet("~/api/decks/{deckId}/cards")]
         public async Task<ActionResult<List<Card>>> GetAllCard(int deckId)
         {
             var cards = await _db.Cards
-                .Where(b=> b.DeckId == deckId)
+                .AsNoTracking()
+                .Where(b => b.DeckId == deckId)
                 .ToListAsync();
+
+            foreach (var card in cards)
+            {
+                NormalizeUtc(card);
+            }
+
             return Ok(cards);
         }
 
@@ -125,11 +134,8 @@ namespace CardsApp.Api.Controllers
         }
 
         /// <summary>
-        /// Перемещение по алгоритму Лейтнера
+        /// Обрабатывает ответ пользователя и перемещение по алгоритму Лейтнера
         /// </summary>
-        /// <param name="id"></param>
-        /// <param name="answerDto"></param>
-        /// <returns></returns>
         [HttpPost("{id}/answer")]
         public async Task<IActionResult> AnswerCard(int id, [FromBody] AnswerDto answerDto)
         {
@@ -138,17 +144,23 @@ namespace CardsApp.Api.Controllers
 
             if (existingCard.LeitnerBox == DoneLearn) return BadRequest(new
             { message = $"Ошибка ответа: Карточка с ID {id} уже выучена" });
-        
-            if (answerDto.IsCorrect)  
+
+            if (answerDto.IsCorrect)
                 existingCard.LeitnerBox++;
-            else 
+            else
                 existingCard.LeitnerBox = 1;
+
+            existingCard.NextReviewAt = GetNextReviewDate(existingCard.LeitnerBox);
 
             await _db.SaveChangesAsync();
             return NoContent();
         }
 
-
+        /// <summary>
+        /// Возвращает список карточек из указанного набора, которые пора повторить на текущий момент.
+        /// </summary>
+        /// <param name="deckId"></param>
+        /// <returns></returns>
         [HttpGet("~/api/decks/{deckId}/review")]
         public async Task<ActionResult<List<Card>>> GetReviewCards(int deckId)
         {
@@ -161,10 +173,56 @@ namespace CardsApp.Api.Controllers
                 });
             }
 
+            var now = DateTime.UtcNow;
             var cards = await _db.Cards
-                .Where(b => b.DeckId == deckId && b.LeitnerBox !=DoneLearn)
+                .AsNoTracking()
+                .Where(b => b.DeckId == deckId
+                         && b.LeitnerBox != DoneLearn
+                         && b.NextReviewAt != null
+                         && b.NextReviewAt <= now)
                 .ToListAsync();
+
+            foreach (var card in cards)
+            {
+                NormalizeUtc(card);
+            }
+
             return Ok(cards);
         }
+
+        /// <summary>
+        /// Вычисляет дату следующего повторения карточки в зависимости от её текущей коробки.
+        /// </summary>
+        /// <param name="leitnerBox">Номер текущей коробки Лейтнера.</param>
+        /// <returns>Дата следующего повторения в формате UTC или <c>null</c>, если карточка полностью выучена.</returns>
+        private static DateTime? GetNextReviewDate(int leitnerBox)
+        {
+            if (leitnerBox >= DoneLearn)
+                return null;
+
+            int days = leitnerBox switch
+            {
+                1 => 1,
+                2 => 2,
+                3 => 4,
+                _ => 1
+            };
+
+            return DateTime.SpecifyKind(DateTime.UtcNow.Date.AddDays(days), DateTimeKind.Utc);
+        }
+
+        /// <summary>
+        /// Явно задает свойство <see cref="DateTimeKind.Utc"/> для даты следующего повторения карточки.
+        /// </summary>
+        /// <param name="card">Карточка, дату которой необходимо нормализовать.</param>
+        private static void NormalizeUtc(Card card)
+        {
+            if (card.NextReviewAt.HasValue)
+            {
+                card.NextReviewAt = DateTime.SpecifyKind(card.NextReviewAt.Value, DateTimeKind.Utc);
+            }
+        }
     }
+    
 }
+

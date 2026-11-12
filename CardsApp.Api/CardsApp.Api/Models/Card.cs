@@ -7,6 +7,7 @@
         public required string Term { get; set; }
         public required string Definition { get; set; }
         public int LeitnerBox { get; set; } = 1; // Карточка попадает в "коробка 1"
+        public DateTime? NextReviewAt { get; set; } = DateTime.UtcNow;
         public Deck Deck { get; set; } = null!;
     }
 }

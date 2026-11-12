@@ -28,7 +28,7 @@ const reviewSection = document.getElementById("reviewSection");
 const closeReviewBtn = document.getElementById("closeReviewBtn");
 const cardBox = document.getElementById("cardBox");
 
-// Состояние (State)
+// Состояние приложения (State)
 let activeDeckId = null;
 let reviewDeck = [];
 let currentReviewIndex = 0;
@@ -60,7 +60,7 @@ async function loadDecks() {
             const btnDelete = document.createElement("button");
             btnDelete.className = "btn btn-tonal";
             btnDelete.textContent = "Удалить";
-            btnDelete.addEventListener("click", () => handleDeleteDeck(deck.id, deck.title));
+            btnDelete.addEventListener("click", () => handleDeleteDeck(deck.id, deck.title, btnDelete));
 
             actionsDiv.appendChild(btnStudy);
             actionsDiv.appendChild(btnDelete);
@@ -70,7 +70,8 @@ async function loadDecks() {
             decksList.appendChild(li);
         });
     } catch (err) {
-        console.error(err);
+        console.error("Ошибка загрузки наборов: ", err);
+        alert("Не удалось загрузить список наборов");
     }
 }
 
@@ -79,31 +80,46 @@ createDeckForm.addEventListener("submit", async (e) => {
     const title = inputDeckName.value.trim();
     if (!title) return;
 
+    const submitBtn = createDeckForm.querySelector("button[type='submit']");
+    submitBtn.disabled = true;
+
     try {
         const response = await createDeck(title);
         if (response.ok) {
             inputDeckName.value = "";
-            loadDecks();
+            await loadDecks();
         } else {
-            alert("Не удалось создать набор");
+            alert(`Ошибка при создании набора: статус ${response.status}`);
         }
     } catch (err) {
         console.error(err);
+        alert("Сетевая ошибка при создании набора");
+    } finally {
+        submitBtn.disabled = false;
     }
 });
 
-async function handleDeleteDeck(id, title) {
-    if (!confirm(`Удалить набор "${title}"?`)) return;
+// Пункт 2: Удаление набора с блокировкой кнопки и проверкой ошибок
+async function handleDeleteDeck(id, title, btnElement) {
+    if (!confirm(`Удалить набор "${title}" и все его карточки?`)) return;
+
+    btnElement.disabled = true;
     try {
         const response = await deleteDeck(id);
         if (response.ok) {
             if (activeDeckId === id) {
                 deckDetailsPanel.classList.add("hidden");
+                activeDeckId = null;
             }
-            loadDecks();
+            await loadDecks();
+        } else {
+            alert(`Не удалось удалить набор: статус ${response.status}`);
+            btnElement.disabled = false;
         }
     } catch (err) {
-        console.error(err);
+        console.error("Ошибка при удалении набора: ", err);
+        alert("Сетевая ошибка при удалении набора");
+        btnElement.disabled = false;
     }
 }
 
@@ -128,10 +144,13 @@ async function loadCardsList(deckId) {
     cardsContainer.innerHTML = "";
     try {
         const cards = await getAllCards(deckId);
+
+        // Пункт 3: Валидный HTML — li вместо p внутри ul
         if (cards.length === 0) {
-            const emptyP = document.createElement("p");
-            emptyP.textContent = "В наборе пока нет карточек.";
-            cardsContainer.appendChild(emptyP);
+            const emptyLi = document.createElement("li");
+            emptyLi.className = "card-item";
+            emptyLi.textContent = "В наборе пока нет карточек.";
+            cardsContainer.appendChild(emptyLi);
             return;
         }
 
@@ -152,7 +171,17 @@ async function loadCardsList(deckId) {
 
             const badge = document.createElement("span");
             badge.className = "card-box-badge";
-            badge.textContent = `Коробка Лейтнера: ${card.leitnerBox}`;
+
+            let nextText;
+            if (card.nextReviewAt === null) {
+                nextText = "выучено";
+            } else {
+                const next = new Date(card.nextReviewAt);
+                nextText = next <= new Date()
+                    ? "доступна сейчас"
+                    : `повтор: ${next.toLocaleDateString("ru-RU")}`;
+            }
+            badge.textContent = `Коробка Лейтнера: ${card.leitnerBox} · ${nextText}`;
 
             content.appendChild(term);
             content.appendChild(def);
@@ -161,9 +190,26 @@ async function loadCardsList(deckId) {
             const btnDel = document.createElement("button");
             btnDel.className = "btn btn-tonal";
             btnDel.textContent = "✕";
+            btnDel.title = "Удалить карточку";
+
+            // Пункт 2: Удаление карточки с try/catch, блокировкой кнопки и проверкой ответа
             btnDel.addEventListener("click", async () => {
-                await deleteCard(card.id);
-                loadCardsList(deckId);
+                if (!confirm(`Удалить карточку "${card.term}"?`)) return;
+
+                btnDel.disabled = true;
+                try {
+                    const response = await deleteCard(card.id);
+                    if (response.ok) {
+                        await loadCardsList(deckId);
+                    } else {
+                        alert(`Не удалось удалить карточку: статус ${response.status}`);
+                        btnDel.disabled = false;
+                    }
+                } catch (err) {
+                    console.error("Ошибка при удалении карточки: ", err);
+                    alert("Сетевая ошибка при удалении карточки");
+                    btnDel.disabled = false;
+                }
             });
 
             li.appendChild(content);
@@ -171,7 +217,11 @@ async function loadCardsList(deckId) {
             cardsContainer.appendChild(li);
         });
     } catch (err) {
-        console.error(err);
+        console.error("Ошибка загрузки списка карточек: ", err);
+        const errorLi = document.createElement("li");
+        errorLi.className = "card-item";
+        errorLi.textContent = "Не удалось загрузить карточки.";
+        cardsContainer.appendChild(errorLi);
     }
 }
 
@@ -183,15 +233,23 @@ createCardForm.addEventListener("submit", async (e) => {
     const def = inputCardDef.value.trim();
     if (!term || !def) return;
 
+    const submitBtn = createCardForm.querySelector("button[type='submit']");
+    submitBtn.disabled = true;
+
     try {
         const response = await createCard(activeDeckId, term, def);
         if (response.ok) {
             inputCardTerm.value = "";
             inputCardDef.value = "";
-            loadCardsList(activeDeckId);
+            await loadCardsList(activeDeckId);
+        } else {
+            alert(`Не удалось создать карточку: статус ${response.status}`);
         }
     } catch (err) {
         console.error(err);
+        alert("Сетевая ошибка при создании карточки");
+    } finally {
+        submitBtn.disabled = false;
     }
 });
 
@@ -203,7 +261,7 @@ async function startReviewSession(deckId) {
         currentReviewIndex = 0;
 
         if (reviewDeck.length === 0) {
-            alert("Все карточки выучены либо набор пуст!");
+            alert("На сегодня повторять нечего: карточки либо выучены, либо ждут следующего срока повторения.");
             return;
         }
 
@@ -212,6 +270,7 @@ async function startReviewSession(deckId) {
         renderCurrentReviewCard();
     } catch (err) {
         console.error(err);
+        alert("Не удалось запустить повторение карточек");
     }
 }
 
@@ -253,12 +312,16 @@ function renderCurrentReviewCard() {
         const btnWrong = document.createElement("button");
         btnWrong.className = "btn btn-danger";
         btnWrong.textContent = "Не знаю";
-        btnWrong.addEventListener("click", () => handleAnswer(card.id, false));
 
         const btnRight = document.createElement("button");
         btnRight.className = "btn btn-success";
         btnRight.textContent = "Знаю";
-        btnRight.addEventListener("click", () => handleAnswer(card.id, true));
+
+        // Пункт 1: Передаем кнопки в обработчик для блокировки от повторного нажатия
+        const answerButtons = [btnWrong, btnRight];
+
+        btnWrong.addEventListener("click", () => handleAnswer(card.id, false, answerButtons));
+        btnRight.addEventListener("click", () => handleAnswer(card.id, true, answerButtons));
 
         actions.appendChild(btnWrong);
         actions.appendChild(btnRight);
@@ -271,13 +334,28 @@ function renderCurrentReviewCard() {
     cardBox.appendChild(btnShowDef);
 }
 
-async function handleAnswer(cardId, isCorrect) {
+// Пункт 1: handleAnswer блокирует кнопки, проверяет response.ok и обрабатывает сбои
+async function handleAnswer(cardId, isCorrect, buttons) {
+    // 1. Блокируем кнопки немедленно, предотвращая спам-клики
+    buttons.forEach(btn => btn.disabled = true);
+
     try {
-        await sendCardAnswer(cardId, isCorrect);
+        const response = await sendCardAnswer(cardId, isCorrect);
+
+        // 2. Проверяем статус ответа сервера
+        if (!response.ok) {
+            alert(`Ошибка сервера при сохранении ответа: статус ${response.status}`);
+            buttons.forEach(btn => btn.disabled = false); // Разблокируем, чтобы можно было повторить попытку
+            return;
+        }
+
+        // 3. Только если ответ успешно сохранён — идём к следующей карточке
         currentReviewIndex++;
         renderCurrentReviewCard();
     } catch (err) {
-        console.error(err);
+        console.error("Сетевая ошибка при отправке ответа: ", err);
+        alert("Сетевая ошибка: не удалось отправить ответ на карточку");
+        buttons.forEach(btn => btn.disabled = false);
     }
 }
 

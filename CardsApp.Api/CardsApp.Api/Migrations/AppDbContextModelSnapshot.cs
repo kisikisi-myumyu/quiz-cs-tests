@@ -33,6 +33,9 @@ namespace CardsApp.Api.Migrations
                     b.Property<int>("LeitnerBox")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("NextReviewAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Term")
                         .IsRequired()
                         .HasColumnType("TEXT");
